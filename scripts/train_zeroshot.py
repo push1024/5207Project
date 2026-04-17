@@ -167,7 +167,7 @@ def main():
 
     args = parser.parse_args()
 
-    setup_logging(level=logging.INFO)
+    setup_logging(log_file=args.log_file, level=logging.INFO)
     set_seed(args.seed)
     device = get_device()
 
