@@ -153,7 +153,7 @@ class BitFitFineTuner:
         reset_memory_stats(self.device)
 
     def train_epoch(self) -> float:
-        """训练一个 epoch"""
+        """训练一个 epoch（默认使用 self.optimizer）"""
         self.model.train()
         total_loss = 0
 
@@ -169,6 +169,29 @@ class BitFitFineTuner:
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
             self.scheduler.step()
+
+            total_loss += loss.item()
+            pbar.set_postfix({"loss": f"{loss.item():.4f}"})
+
+        return total_loss / len(self.train_loader)
+
+    def train_epoch_custom(self, optimizer, scheduler) -> float:
+        """训练一个 epoch（使用外部传入的 optimizer/scheduler）"""
+        self.model.train()
+        total_loss = 0
+
+        pbar = tqdm(self.train_loader, desc="训练中", leave=False)
+        for batch in pbar:
+            batch = {k: v.to(self.device) for k, v in batch.items()}
+
+            outputs = self.model(**batch)
+            loss = outputs.loss
+
+            optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            optimizer.step()
+            scheduler.step()
 
             total_loss += loss.item()
             pbar.set_postfix({"loss": f"{loss.item():.4f}"})
@@ -197,19 +220,94 @@ class BitFitFineTuner:
         return accuracy, all_preds, all_labels
 
     def train(self) -> dict:
-        """执行完整训练流程"""
+        """执行完整训练流程：两阶段训练"""
         timer = Timer()
         timer.start()
+
+        # ===== 阶段1: 只训练 classifier（高学习率，让它脱离随机初始化）=====
+        logging.info(f"\n{'='*60}")
+        logging.info(f"阶段1: 训练 Classifier（高学习率）")
+        logging.info(f"{'='*60}")
+
+        for name, param in self.model.named_parameters():
+            if "classifier" in name:
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
+
+        trainable_1 = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        logging.info(f"阶段1 可训练参数: {trainable_1:,}")
+
+        optimizer_p1 = AdamW(
+            filter(lambda p: p.requires_grad, self.model.parameters()),
+            lr=1e-3,
+            weight_decay=self.weight_decay
+        )
+        total_steps_p1 = len(self.train_loader) * 2
+        scheduler_p1 = get_linear_schedule_with_warmup(
+            optimizer_p1, num_warmup_steps=0, num_training_steps=total_steps_p1
+        )
+
+        for epoch in range(2):
+            self.model.train()
+            total_loss = 0
+            for batch in tqdm(self.train_loader, desc="阶段1", leave=False):
+                batch = {k: v.to(self.device) for k, v in batch.items()}
+                outputs = self.model(**batch)
+                loss = outputs.loss
+                optimizer_p1.zero_grad()
+                loss.backward()
+                optimizer_p1.step()
+                scheduler_p1.step()
+                total_loss += loss.item()
+            avg_loss = total_loss / len(self.train_loader)
+            val_acc, _, _ = self.evaluate(self.val_loader)
+            logging.info(f"阶段1 Epoch {epoch+1}: Loss={avg_loss:.4f}, Val Acc={val_acc:.4f}")
+
+        # ===== 阶段2: 训练 classifier + bias =====
+        logging.info(f"\n{'='*60}")
+        logging.info(f"阶段2: 训练 Classifier + Bias（BitFit）")
+        logging.info(f"{'='*60}")
+
+        for name, param in self.model.named_parameters():
+            if "bias" in name or "classifier" in name:
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
+
+        trainable_2 = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        logging.info(f"阶段2 可训练参数: {trainable_2:,}")
+
+        # 差异化学习率: classifier 用较高，bias 用较低
+        bias_params = []
+        classifier_params = []
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                if "classifier" in name:
+                    classifier_params.append(param)
+                else:
+                    bias_params.append(param)
+
+        optimizer_p2 = AdamW([
+            {"params": classifier_params, "lr": 5e-4},
+            {"params": bias_params, "lr": self.learning_rate},
+        ], weight_decay=self.weight_decay)
+
+        total_steps_p2 = len(self.train_loader) * self.epochs
+        warmup_steps = int(total_steps_p2 * 0.1)
+        scheduler_p2 = get_linear_schedule_with_warmup(
+            optimizer_p2, num_warmup_steps=warmup_steps, num_training_steps=total_steps_p2
+        )
 
         best_val_acc = 0.0
         best_epoch = 0
 
         for epoch in range(self.epochs):
             logging.info(f"\n{'='*40}")
-            logging.info(f"Epoch {epoch + 1}/{self.epochs}")
+            logging.info(f"Epoch {epoch + 1}/{self.epochs} (阶段2)")
             logging.info(f"{'='*40}")
 
-            train_loss = self.train_epoch()
+            train_loss = self.train_epoch_custom(optimizer_p2, scheduler_p2)
             val_acc, _, _ = self.evaluate(self.val_loader)
 
             logging.info(f"训练 Loss: {train_loss:.4f}")
@@ -218,7 +316,6 @@ class BitFitFineTuner:
             if val_acc > best_val_acc:
                 best_val_acc = val_acc
                 best_epoch = epoch + 1
-
                 best_model_path = RESULTS_DIR / f"bitfit_{self.sample_size}_best.pt"
                 torch.save(self.model.state_dict(), best_model_path)
                 logging.info(f"✓ 保存最佳 BitFit 模型至: {best_model_path}")
