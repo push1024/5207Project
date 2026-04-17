@@ -1,0 +1,12 @@
+{
+  "sample_size": 2000,
+  "actual_size": 2000,
+  "class_distribution": {
+    "anger": 840,
+    "joy": 445,
+    "optimism": 186,
+    "sadness": 529
+  },
+  "random_seed": 42,
+  "parent_split": "train"
+}

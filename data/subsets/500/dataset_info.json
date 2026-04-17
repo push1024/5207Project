@@ -1,0 +1,67 @@
+{
+  "builder_name": "parquet",
+  "citation": "",
+  "config_name": "emotion",
+  "dataset_name": "tweet_eval",
+  "dataset_size": 524422,
+  "description": "",
+  "download_checksums": {
+    "hf://datasets/tweet_eval@b3a375baf0f409c77e6bc7aa35102b7b3534f8be/emotion/train-00000-of-00001.parquet": {
+      "num_bytes": 233004,
+      "checksum": null
+    },
+    "hf://datasets/tweet_eval@b3a375baf0f409c77e6bc7aa35102b7b3534f8be/emotion/test-00000-of-00001.parquet": {
+      "num_bytes": 105421,
+      "checksum": null
+    },
+    "hf://datasets/tweet_eval@b3a375baf0f409c77e6bc7aa35102b7b3534f8be/emotion/validation-00000-of-00001.parquet": {
+      "num_bytes": 28591,
+      "checksum": null
+    }
+  },
+  "download_size": 367016,
+  "features": {
+    "text": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "label": {
+      "names": [
+        "anger",
+        "joy",
+        "optimism",
+        "sadness"
+      ],
+      "_type": "ClassLabel"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 891438,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 339279,
+      "num_examples": 3257,
+      "dataset_name": "tweet_eval"
+    },
+    "test": {
+      "name": "test",
+      "num_bytes": 146823,
+      "num_examples": 1421,
+      "dataset_name": "tweet_eval"
+    },
+    "validation": {
+      "name": "validation",
+      "num_bytes": 38320,
+      "num_examples": 374,
+      "dataset_name": "tweet_eval"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}

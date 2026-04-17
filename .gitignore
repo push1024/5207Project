@@ -1,0 +1,10 @@
+docs/
+config/
+logs/
+results/
+src/_pycache_/
+venv/
+
+.cursorrules
+active_context.md
+DSAI5207_Project_Proposal_Group6.pdf

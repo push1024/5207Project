@@ -1,0 +1,16 @@
+{
+  "dataset_name": "tweet_eval",
+  "subset": "emotion",
+  "label_map": {
+    "0": "anger",
+    "1": "joy",
+    "2": "optimism",
+    "3": "sadness"
+  },
+  "splits": {
+    "train": 3257,
+    "test": 1421,
+    "validation": 374
+  },
+  "random_seed": 42
+}
