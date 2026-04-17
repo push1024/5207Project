@@ -171,13 +171,19 @@ class LoRAFineTuner:
             self.optimizer.zero_grad()
             loss.backward()
 
-            # DEBUG: 检查梯度
-            has_grad_params = [(n, p.grad is not None)
+            has_grad = [(n, p.grad is not None, p.numel())
                 for n, p in self.model.named_parameters() if p.requires_grad]
-            grad_count = sum(1 for _, g in has_grad_params if g)
+            grad_count = sum(1 for _, g, _ in has_grad if g)
+            grad_params = sum(n for _, g, n in has_grad if g)
             if grad_count == 0:
                 logging.warning("⚠️ 没有任何参数有梯度！")
                 continue
+            if hasattr(self, '_debug_first_batch_done'):
+                pass
+            else:
+                self._debug_first_batch_done = True
+                logging.info(f"🔍 首个 batch 梯度统计: {grad_count} 个参数有梯度, "
+                              f"共 {grad_params:,} 参数量可更新")
 
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
