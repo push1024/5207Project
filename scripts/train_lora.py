@@ -223,15 +223,15 @@ class LoRAFineTuner:
 
         optimizer_p1 = AdamW(
             filter(lambda p: p.requires_grad, self.model.parameters()),
-            lr=1e-3,
+            lr=5e-3,
             weight_decay=self.weight_decay
         )
-        total_steps_p1 = len(self.train_loader) * 2  # 2 epoch
+        total_steps_p1 = len(self.train_loader) * 3  # 3 epoch
         scheduler_p1 = get_linear_schedule_with_warmup(
             optimizer_p1, num_warmup_steps=0, num_training_steps=total_steps_p1
         )
 
-        for epoch in range(2):
+        for epoch in range(3):
             self.model.train()
             total_loss = 0
             for batch in tqdm(self.train_loader, desc="阶段1", leave=False):
@@ -272,7 +272,7 @@ class LoRAFineTuner:
 
         optimizer_p2 = AdamW([
             {"params": classifier_params, "lr": 5e-4},
-            {"params": lora_params, "lr": self.learning_rate},
+            {"params": lora_params, "lr": 1e-4},
         ], weight_decay=self.weight_decay)
 
         total_steps_p2 = len(self.train_loader) * self.epochs

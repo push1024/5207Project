@@ -290,7 +290,7 @@ class BitFitFineTuner:
 
         optimizer_p2 = AdamW([
             {"params": classifier_params, "lr": 5e-4},
-            {"params": bias_params, "lr": self.learning_rate},
+            {"params": bias_params, "lr": 5e-4},
         ], weight_decay=self.weight_decay)
 
         total_steps_p2 = len(self.train_loader) * self.epochs
