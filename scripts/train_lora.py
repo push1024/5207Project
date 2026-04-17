@@ -170,6 +170,15 @@ class LoRAFineTuner:
 
             self.optimizer.zero_grad()
             loss.backward()
+
+            # DEBUG: 检查梯度
+            has_grad_params = [(n, p.grad is not None)
+                for n, p in self.model.named_parameters() if p.requires_grad]
+            grad_count = sum(1 for _, g in has_grad_params if g)
+            if grad_count == 0:
+                logging.warning("⚠️ 没有任何参数有梯度！")
+                continue
+
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
             self.scheduler.step()
