@@ -26,12 +26,59 @@ import logging
 import subprocess
 from pathlib import Path
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
+
+import torch
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.utils import setup_logging
 from src.config import SAMPLE_SIZES, RESULTS_DIR
+
+
+def detect_device_and_vram() -> tuple:
+    """
+    检测计算设备和可用显存，返回 (device_name, vram_gb)
+
+    优先级: CUDA > MPS > CPU
+    """
+    if torch.cuda.is_available():
+        vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
+        name = torch.cuda.get_device_name(0)
+        return name, vram_gb
+    if torch.backends.mps.is_available():
+        try:
+            _ = torch.zeros(1).to("mps")
+            return "Apple MPS (Mac)", 0  # MPS 统一内存不固定，用 0 标记
+        except Exception:
+            pass
+    return "CPU", 0
+
+
+def get_batch_sizes_for_device(vram_gb: float, device_name: str) -> Dict[str, int]:
+    """
+    根据设备显存大小，返回各方法的推荐 batch_size
+
+    显存经验值:
+    - RTX 3060 Laptop 6GB: Full 在 batch=32 时峰值 ~5.3GB，可跑
+    - RTX 2060 6GB:       Full 在 batch=32 可能接近 OOM，降为 16
+    - RTX 4070 8GB:       所有方法 batch=32 无压力
+    - MacBook Air M4:     MPS 统一内存，用 batch=32 即可
+    """
+    # MPS 设备统一用 batch=32（MPS 内存管理机制与 CUDA 不同）
+    if "mps" in device_name.lower() or "apple" in device_name.lower():
+        return {"full": 32, "lora": 32, "bitfit": 32}
+
+    # CUDA 设备
+    if vram_gb < 6.5:
+        # RTX 2060 等 6GB 显存
+        return {"full": 16, "lora": 32, "bitfit": 32}
+    elif vram_gb < 7.5:
+        # RTX 3060 Laptop 6GB
+        return {"full": 32, "lora": 32, "bitfit": 32}
+    else:
+        # RTX 4070 8GB 及以上
+        return {"full": 32, "lora": 32, "bitfit": 32}
 
 
 METHODS = ["full", "lora", "bitfit", "zeroshot"]
@@ -88,7 +135,7 @@ def run_experiment(
             return json.load(f)
 
     logging.info(f"\n{'='*60}")
-    logging.info(f"开始实验: {method} @ {sample_size}")
+    logging.info(f"开始实验: {method} @ {sample_size} (batch_size={batch_sizes.get(method, args.batch_size)})")
     logging.info(f"{'='*60}")
 
     start_time = datetime.now()
@@ -140,8 +187,8 @@ def main():
     parser.add_argument(
         "--batch-size", "-b",
         type=int,
-        default=32,
-        help="批次大小 (默认: 32)"
+        default=None,
+        help="批次大小 (默认: None，表示运行时根据设备自动选择)"
     )
     parser.add_argument(
         "--epochs", "-e",
@@ -163,6 +210,15 @@ def main():
 
     args = parser.parse_args()
 
+    device_name, vram_gb = detect_device_and_vram()
+    if vram_gb > 0:
+        logging.info(f"检测到设备: {device_name}, 显存: {vram_gb:.1f} GB")
+    else:
+        logging.info(f"检测到设备: {device_name}")
+
+    batch_sizes = get_batch_sizes_for_device(vram_gb, device_name)
+    logging.info(f"自适应 batch_size 配置: {batch_sizes}")
+
     if args.log_dir:
         log_dir = Path(args.log_dir)
     else:
@@ -174,9 +230,8 @@ def main():
 
     logging.info("=" * 60)
     logging.info("实验批次开始")
-    logging.info(f"方法: {args.methods}")
-    logging.info(f"样本规模: {args.sample_sizes}")
-    logging.info(f"批次大小: {args.batch_size}")
+    logging.info(f"设备: {device_name}, 显存: {vram_gb:.1f} GB" if vram_gb > 0 else f"设备: {device_name}")
+    logging.info(f"自适应 batch_size: {batch_sizes}")
     logging.info(f"训练轮数: {args.epochs}")
     logging.info(f"日志目录: {log_dir}")
     logging.info("=" * 60)
@@ -191,7 +246,7 @@ def main():
             result = run_experiment(
                 method=method,
                 sample_size=sample_size,
-                batch_size=args.batch_size,
+                batch_size=batch_sizes.get(method, args.batch_size or 32),
                 epochs=args.epochs,
                 log_dir=log_dir
             )

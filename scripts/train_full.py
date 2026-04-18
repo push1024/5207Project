@@ -34,7 +34,8 @@ from src.utils import (
     setup_logging,
     Timer,
     compute_accuracy,
-    ResultsTracker
+    ResultsTracker,
+    record_mps_peak
 )
 from src.config import (
     MODEL_NAME,
@@ -145,6 +146,7 @@ class FullFineTuner:
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
             outputs = self.model(**batch)
+            record_mps_peak()
             loss = outputs.loss
 
             self.optimizer.zero_grad()
@@ -169,6 +171,7 @@ class FullFineTuner:
         for batch in tqdm(dataloader, desc="评估中", leave=False):
             batch = {k: v.to(self.device) for k, v in batch.items()}
             outputs = self.model(**batch)
+            record_mps_peak()
 
             total_loss += outputs.loss.item()
             preds = torch.argmax(outputs.logits, dim=-1)

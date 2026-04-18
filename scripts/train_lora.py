@@ -35,7 +35,8 @@ from src.utils import (
     setup_logging,
     Timer,
     compute_accuracy,
-    ResultsTracker
+    ResultsTracker,
+    record_mps_peak
 )
 from src.config import (
     MODEL_NAME,
@@ -47,6 +48,23 @@ from src.config import (
     LoRAConfig as ConfigLoRA
 )
 from src.data_loader import load_data, get_data_loaders
+
+
+# ======================== MPS 兼容性检测 ========================
+def check_mps_compatibility():
+    """检测 PEFT+LoRA 在 MPS 上的兼容性，不兼容则报错退出"""
+    device = get_device()
+    if device.type == "mps":
+        import peft
+        torch_version = tuple(int(x) for x in torch.__version__.split(".")[:2])
+        if torch_version < (2, 5):
+            logging.error(
+                f"检测到 MacBook Air M4 使用 PyTorch {torch.__version__}，"
+                f"但 PEFT 库的 MPS 支持需要 PyTorch >= 2.5.0。"
+                f"请先升级: pip install torch --upgrade"
+            )
+            sys.exit(1)
+        logging.info(f"MPS 兼容性检查通过 (PyTorch {torch.__version__})")
 
 
 class LoRAFineTuner:
@@ -166,6 +184,7 @@ class LoRAFineTuner:
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
             outputs = self.model(**batch)
+            record_mps_peak()
             loss = outputs.loss
 
             self.optimizer.zero_grad()
@@ -191,6 +210,7 @@ class LoRAFineTuner:
         for batch in tqdm(dataloader, desc="评估中", leave=False):
             batch = {k: v.to(self.device) for k, v in batch.items()}
             outputs = self.model(**batch)
+            record_mps_peak()
 
             total_loss += outputs.loss.item()
             preds = torch.argmax(outputs.logits, dim=-1)
@@ -237,6 +257,7 @@ class LoRAFineTuner:
             for batch in tqdm(self.train_loader, desc="阶段1", leave=False):
                 batch = {k: v.to(self.device) for k, v in batch.items()}
                 outputs = self.model(**batch)
+            record_mps_peak()
                 loss = outputs.loss
                 optimizer_p1.zero_grad()
                 loss.backward()
@@ -294,6 +315,7 @@ class LoRAFineTuner:
             for batch in tqdm(self.train_loader, desc="训练中", leave=False):
                 batch = {k: v.to(self.device) for k, v in batch.items()}
                 outputs = self.model(**batch)
+            record_mps_peak()
                 loss = outputs.loss
                 optimizer_p2.zero_grad()
                 loss.backward()
@@ -375,6 +397,7 @@ def main():
 
     setup_logging(log_file=args.log_file, level=logging.INFO)
     set_seed(args.seed)
+    check_mps_compatibility()
     device = get_device()
 
     try:

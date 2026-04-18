@@ -20,6 +20,19 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 
 
+# ======================== MPS 显存峰值追踪 ========================
+# MPS 没有 torch.mps.max_memory_allocated() API，只能手动记录峰值
+_mps_peak_memory_gb = 0.0
+
+
+def record_mps_peak():
+    """在每个 batch forward 后调用，更新 MPS 峰值显存追踪"""
+    global _mps_peak_memory_gb
+    current = torch.mps.current_allocated_memory() / 1e9
+    if current > _mps_peak_memory_gb:
+        _mps_peak_memory_gb = current
+
+
 # ======================== 设备管理 ========================
 
 def get_device() -> torch.device:
@@ -55,11 +68,13 @@ def get_device() -> torch.device:
 
 def reset_memory_stats(device: torch.device):
     """重置 GPU/MPS 内存统计"""
+    global _mps_peak_memory_gb
     if device.type == "cuda":
         torch.cuda.reset_peak_memory_stats()
         torch.cuda.empty_cache()
     elif device.type == "mps":
         torch.mps.empty_cache()
+        _mps_peak_memory_gb = 0.0
 
 
 def get_peak_memory_gb(device: torch.device) -> float:
@@ -75,7 +90,7 @@ def get_peak_memory_gb(device: torch.device) -> float:
     if device.type == "cuda":
         return torch.cuda.max_memory_allocated() / 1e9
     elif device.type == "mps":
-        return torch.mps.current_allocated_memory() / 1e9
+        return _mps_peak_memory_gb
     return 0.0
 
 
