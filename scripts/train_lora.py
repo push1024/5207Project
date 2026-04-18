@@ -223,7 +223,7 @@ class LoRAFineTuner:
 
         optimizer_p1 = AdamW(
             filter(lambda p: p.requires_grad, self.model.parameters()),
-            lr=5e-3,
+            lr=1e-3,
             weight_decay=self.weight_decay
         )
         total_steps_p1 = len(self.train_loader) * 3  # 3 epoch
@@ -272,7 +272,7 @@ class LoRAFineTuner:
 
         optimizer_p2 = AdamW([
             {"params": classifier_params, "lr": 5e-4},
-            {"params": lora_params, "lr": 1e-4},
+            {"params": lora_params, "lr": 5e-5},
         ], weight_decay=self.weight_decay)
 
         total_steps_p2 = len(self.train_loader) * self.epochs
