@@ -1,0 +1,190 @@
+[
+  {
+    "method": "full",
+    "sample_size": 200,
+    "batch_size": 32,
+    "epochs": 5,
+    "learning_rate": 2e-05,
+    "weight_decay": 0.01,
+    "best_val_accuracy": 0.42780748663101603,
+    "best_epoch": 1,
+    "training_time_seconds": 35.00756419999743,
+    "peak_vram_gb": 5.262964736,
+    "test_accuracy": 0.39268121041520054
+  },
+  {
+    "method": "full",
+    "sample_size": 500,
+    "batch_size": 32,
+    "epochs": 5,
+    "learning_rate": 2e-05,
+    "weight_decay": 0.01,
+    "best_val_accuracy": 0.7085561497326203,
+    "best_epoch": 4,
+    "training_time_seconds": 54.49881219999952,
+    "peak_vram_gb": 5.264247296,
+    "test_accuracy": 0.7121745249824067
+  },
+  {
+    "method": "full",
+    "sample_size": 1000,
+    "batch_size": 32,
+    "epochs": 5,
+    "learning_rate": 2e-05,
+    "weight_decay": 0.01,
+    "best_val_accuracy": 0.767379679144385,
+    "best_epoch": 5,
+    "training_time_seconds": 78.06361059999836,
+    "peak_vram_gb": 5.264323072,
+    "test_accuracy": 0.7790288529204785
+  },
+  {
+    "method": "full",
+    "sample_size": 2000,
+    "batch_size": 32,
+    "epochs": 5,
+    "learning_rate": 2e-05,
+    "weight_decay": 0.01,
+    "best_val_accuracy": 0.7807486631016043,
+    "best_epoch": 3,
+    "training_time_seconds": 143.43221450000055,
+    "peak_vram_gb": 5.261701632,
+    "test_accuracy": 0.8078817733990148
+  },
+  {
+    "method": "lora",
+    "sample_size": 200,
+    "batch_size": 32,
+    "epochs": 5,
+    "learning_rate": 2e-05,
+    "lora_rank": 8,
+    "lora_alpha": 32,
+    "lora_dropout": 0.1,
+    "target_modules": [
+      "query",
+      "value"
+    ],
+    "best_val_accuracy": 0.7085561497326203,
+    "best_epoch": 5,
+    "training_time_seconds": 31.011136900000565,
+    "peak_vram_gb": 3.130626048,
+    "test_accuracy": 0.697396199859254
+  },
+  {
+    "method": "lora",
+    "sample_size": 500,
+    "batch_size": 32,
+    "epochs": 5,
+    "learning_rate": 2e-05,
+    "lora_rank": 8,
+    "lora_alpha": 32,
+    "lora_dropout": 0.1,
+    "target_modules": [
+      "query",
+      "value"
+    ],
+    "best_val_accuracy": 0.7272727272727273,
+    "best_epoch": 2,
+    "training_time_seconds": 49.39177919999929,
+    "peak_vram_gb": 3.130298368,
+    "test_accuracy": 0.7691766361717101
+  },
+  {
+    "method": "lora",
+    "sample_size": 1000,
+    "batch_size": 32,
+    "epochs": 5,
+    "learning_rate": 2e-05,
+    "lora_rank": 8,
+    "lora_alpha": 32,
+    "lora_dropout": 0.1,
+    "target_modules": [
+      "query",
+      "value"
+    ],
+    "best_val_accuracy": 0.7566844919786097,
+    "best_epoch": 1,
+    "training_time_seconds": 82.876309700001,
+    "peak_vram_gb": 3.129643008,
+    "test_accuracy": 0.7818437719915552
+  },
+  {
+    "method": "lora",
+    "sample_size": 2000,
+    "batch_size": 32,
+    "epochs": 5,
+    "learning_rate": 2e-05,
+    "lora_rank": 8,
+    "lora_alpha": 32,
+    "lora_dropout": 0.1,
+    "target_modules": [
+      "query",
+      "value"
+    ],
+    "best_val_accuracy": 0.7807486631016043,
+    "best_epoch": 5,
+    "training_time_seconds": 150.55596349999905,
+    "peak_vram_gb": 3.157594112,
+    "test_accuracy": 0.8142153413089374
+  },
+  {
+    "method": "bitfit",
+    "sample_size": 200,
+    "batch_size": 32,
+    "epochs": 5,
+    "learning_rate": 2e-05,
+    "weight_decay": 0.01,
+    "best_val_accuracy": 0.56951871657754,
+    "best_epoch": 5,
+    "training_time_seconds": 24.682138000000123,
+    "peak_vram_gb": 2.777522176,
+    "test_accuracy": 0.5573539760731879
+  },
+  {
+    "method": "bitfit",
+    "sample_size": 500,
+    "batch_size": 32,
+    "epochs": 5,
+    "learning_rate": 2e-05,
+    "weight_decay": 0.01,
+    "best_val_accuracy": 0.7272727272727273,
+    "best_epoch": 4,
+    "training_time_seconds": 39.364410100002715,
+    "peak_vram_gb": 2.776503296,
+    "test_accuracy": 0.7480647431386348
+  },
+  {
+    "method": "bitfit",
+    "sample_size": 1000,
+    "batch_size": 32,
+    "epochs": 5,
+    "learning_rate": 2e-05,
+    "weight_decay": 0.01,
+    "best_val_accuracy": 0.7352941176470589,
+    "best_epoch": 5,
+    "training_time_seconds": 65.15419649999967,
+    "peak_vram_gb": 2.7764736,
+    "test_accuracy": 0.776917663617171
+  },
+  {
+    "method": "bitfit",
+    "sample_size": 2000,
+    "batch_size": 32,
+    "epochs": 5,
+    "learning_rate": 2e-05,
+    "weight_decay": 0.01,
+    "best_val_accuracy": 0.7513368983957219,
+    "best_epoch": 3,
+    "training_time_seconds": 112.0463880999996,
+    "peak_vram_gb": 2.777264128,
+    "test_accuracy": 0.7952146375791695
+  },
+  {
+    "method": "zeroshot",
+    "sample_size": 200,
+    "batch_size": 32,
+    "val_accuracy": 0.42780748663101603,
+    "test_accuracy": 0.39268121041520054,
+    "inference_time_seconds": 9.725415900000371
+  }
+]
